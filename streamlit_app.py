@@ -2,18 +2,18 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Load model and scaler
+# --- Load model and scaler ---
 model = joblib.load("model.pkl")
 scaler = joblib.load("scaler.pkl")
 
-# Page config
+# --- Page config ---
 st.set_page_config(
     page_title="Hospital Readmission Predictor",
-    page_icon="🧠",
+    page_icon="🏥",
     layout="centered"
 )
 
-# Custom CSS for styling
+# --- Custom CSS ---
 st.markdown(
     """
     <style>
@@ -48,30 +48,59 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-# App Title
+# --- App Title ---
 st.title("🏥 Hospital Readmission Prediction App")
 st.write("Predict whether a psychiatric patient is likely to be readmitted using 28 clinical and demographic features.")
 
-# Sidebar
+# --- Sidebar for Input Features ---
 st.sidebar.header("⚙️ Input Features")
-st.sidebar.write("Fill in the details below:")
+st.sidebar.write("Fill in the patient details below:")
 
-# Collect inputs
+# List of features used for training (28 total)
 feature_names = [
-    f"Feature {i+1}" for i in range(28)  # Replace with actual column names if available
+    "PatientID",
+    "Age",
+    "Gender",
+    "Ethnicity",
+    "EducationLevel",
+    "BMI",
+    "Smoking",
+    "AlcoholConsumption",
+    "PhysicalActivity",
+    "DietQuality",
+    "SleepQuality",
+    "ChronicConditions",
+    "FamilyHistory",
+    "MedicationAdherence",
+    "NumberOfPreviousAdmissions",
+    "LengthOfStay",
+    "Diagnosis",
+    "SuicidalIdeation",
+    "Homeless",
+    "SocialSupport",
+    "FunctionalImpairment",
+    "CognitiveImpairment",
+    "AnxietyLevel",
+    "DepressionSeverity",
+    "StressLevel",
+    "EmploymentStatus",
+    "IncomeLevel",
+    "MaritalStatus"
 ]
 
+# Collect user inputs
 user_data = {}
 for feature in feature_names:
-    user_data[feature] = st.sidebar.number_input(f"{feature}", value=0.0)
+    user_data[feature] = st.sidebar.text_input(f"{feature}", value="0")
 
 # Convert inputs into DataFrame
 input_df = pd.DataFrame([user_data])
 
-# Scale input
+# Scale input (convert to numeric where possible)
+input_df = input_df.apply(pd.to_numeric, errors="ignore")
 scaled_input = scaler.transform(input_df)
 
-# Predict
+# --- Prediction ---
 if st.button("🔮 Predict"):
     prediction = model.predict(scaled_input)[0]
     prob = model.predict_proba(scaled_input)[0][1]
@@ -81,7 +110,7 @@ if st.button("🔮 Predict"):
     else:
         st.success(f"✅ The model predicts this patient **is not likely to be readmitted**.\n\n Probability: **{prob:.2f}**")
 
-# Footer
+# --- Footer ---
 st.markdown("---")
 st.markdown(
     "<p style='text-align: center; color: gray;'>Built with ❤️ using Streamlit & Machine Learning</p>",
