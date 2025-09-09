@@ -17,7 +17,7 @@ st.write("Enter patient details to estimate the probability of readmission. "
 def load_ann(path: str):
     return load_model(path)
 
-MODEL_PATH = "hospital_readmission_model.keras"   # or .h5 if that's what you saved
+MODEL_PATH = "hospital_readmission_model.h5"   # or .h5 if that's what you saved
 model = load_ann(MODEL_PATH)
 
 # --- Define preprocessing pipeline (rebuilt instead of loading joblib) ---
