@@ -3,7 +3,9 @@ import pandas as pd
 import joblib
 
 # --- Load model and scaler ---
-model = joblib.load("hospital_readmission_model.h5")
+from tensorflow.keras.models import load_model
+model = load_model("hospital_readmission_model.h5")
+
 scaler = joblib.load("pipeline.pkl")
 
 # --- Page config ---
