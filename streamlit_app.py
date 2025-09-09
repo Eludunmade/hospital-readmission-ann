@@ -3,8 +3,8 @@ import pandas as pd
 import joblib
 
 # --- Load model and scaler ---
-model = joblib.load("model.pkl")
-scaler = joblib.load("scaler.pkl")
+model = joblib.load("hospital_readmission_model.h5")
+scaler = joblib.load("pipeline.pkl")
 
 # --- Page config ---
 st.set_page_config(
