@@ -13,7 +13,7 @@ st.write("Enter patient details to estimate the probability of readmission. "
 def load_pipeline(path: str):
     return joblib.load(path)
 
-PIPELINE_PATH = "readmission_pipeline.pkl"
+PIPELINE_PATH = "pipeline.pkl"
 pipeline = load_pipeline(PIPELINE_PATH)
 
 st.sidebar.header("Patient Input")
