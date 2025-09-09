@@ -23,7 +23,7 @@ def load_pipeline(path: str):
         st.warning("⚠️ Preprocessing pipeline not found. Model will fail without it.")
         return None
 
-MODEL_PATH = "ann_model.h5"        # trained ANN
+MODEL_PATH = "hospital_readmission_model.h5"        # trained ANN
 PIPELINE_PATH = "pipeline.pkl"     # preprocessing pipeline
 
 model = load_ann(MODEL_PATH)
