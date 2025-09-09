@@ -1,95 +1,87 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.preprocessing import OneHotEncoder, StandardScaler
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
 from tensorflow.keras.models import load_model
+import joblib
 
+# ------------------ Streamlit Config ------------------
 st.set_page_config(page_title="Hospital Readmission Predictor", page_icon="🏥")
 
 st.title("🏥 Predicting Hospital Readmission (Psychiatric Patients)")
 st.write("Enter patient details to estimate the probability of readmission. "
-         "Inputs are limited to the 7 features used for training.")
+         "Inputs are transformed automatically to match training preprocessing.")
 
-# --- Load ANN model ---
+# ------------------ Load Model & Pipeline ------------------
 @st.cache_resource
 def load_ann(path: str):
     return load_model(path)
 
-MODEL_PATH = "hospital_readmission_model.h5"   # or .h5 if that's what you saved
-model = load_ann(MODEL_PATH)
-
-# --- Define preprocessing pipeline (rebuilt instead of loading joblib) ---
 @st.cache_resource
-def build_pipeline():
-    numeric_features = ["Age", "BMI", "NumberOfPreviousAdmissions", "LengthOfStay"]
-    categorical_features = ["MedicationAdherence", "Diagnosis", "SocialSupport"]
+def load_pipeline(path: str):
+    return joblib.load(path)
 
-    numeric_transformer = StandardScaler()
-    categorical_transformer = OneHotEncoder(handle_unknown="ignore")
+MODEL_PATH = "hospital_readmission_model.h5"   # or .keras
+PIPELINE_PATH = "pipeline.pkl"                 # preprocessing pipeline
 
-    preprocessor = ColumnTransformer(
-        transformers=[
-            ("num", numeric_transformer, numeric_features),
-            ("cat", categorical_transformer, categorical_features),
-        ]
-    )
+model = load_ann(MODEL_PATH)
+pipeline = load_pipeline(PIPELINE_PATH)
 
-    # Wrap in pipeline so it behaves like your old one
-    pipeline = Pipeline(steps=[("preprocessor", preprocessor)])
-    return pipeline
-
-pipeline = build_pipeline()
-
+# ------------------ Sidebar Inputs ------------------
 st.sidebar.header("Patient Input")
 
-# --- Collect inputs (only 7 features) ---
 age = st.sidebar.number_input("Age", min_value=10, max_value=120, value=30, step=1)
 bmi = st.sidebar.number_input("BMI", min_value=10.0, max_value=60.0, value=22.5, step=0.1)
 num_admissions = st.sidebar.number_input("Number of Previous Admissions", min_value=0, max_value=50, value=1, step=1)
 length_stay = st.sidebar.number_input("Length of Stay (days)", min_value=0, max_value=365, value=7, step=1)
 
-medication_adherence = st.sidebar.selectbox("Medication Adherence", ["Low", "Medium", "High"])
+gender = st.sidebar.selectbox("Gender", ["Male", "Female", "Other"])
+ethnicity = st.sidebar.selectbox("Ethnicity", ["White", "Black", "Asian", "Hispanic", "Other"])
+education = st.sidebar.selectbox("Education Level", ["None", "Primary", "Secondary", "Tertiary"])
+smoking = st.sidebar.selectbox("Smoking", ["Yes", "No"])
+alcohol = st.sidebar.selectbox("Alcohol Consumption", ["Yes", "No"])
+physical_activity = st.sidebar.selectbox("Physical Activity", ["Low", "Moderate", "High"])
+diet_quality = st.sidebar.selectbox("Diet Quality", ["Poor", "Average", "Good"])
+medication_adherence = st.sidebar.selectbox("Medication Adherence", ["Poor", "Average", "Good"])
 diagnosis = st.sidebar.selectbox("Diagnosis", ["Schizophrenia", "Bipolar Disorder", "Depression", "Other"])
+suicidal = st.sidebar.selectbox("Suicidal Ideation", ["Yes", "No"])
+homeless = st.sidebar.selectbox("Homeless", ["Yes", "No"])
 social_support = st.sidebar.selectbox("Social Support", ["Low", "Moderate", "High"])
+functional_impairment = st.sidebar.selectbox("Functional Impairment", ["Yes", "No"])
+cognitive_impairment = st.sidebar.selectbox("Cognitive Impairment", ["Yes", "No"])
 
-# --- Build input DataFrame in SAME order as training ---
+# ------------------ Build DataFrame ------------------
+# Must match your training dataset column names & order
 input_df = pd.DataFrame({
     "Age": [age],
     "BMI": [bmi],
     "NumberOfPreviousAdmissions": [num_admissions],
     "LengthOfStay": [length_stay],
+    "Gender": [gender],
+    "Ethnicity": [ethnicity],
+    "EducationLevel": [education],
+    "Smoking": [smoking],
+    "AlcoholConsumption": [alcohol],
+    "PhysicalActivity": [physical_activity],
+    "DietQuality": [diet_quality],
     "MedicationAdherence": [medication_adherence],
     "Diagnosis": [diagnosis],
+    "SuicidalIdeation": [suicidal],
+    "Homeless": [homeless],
     "SocialSupport": [social_support],
+    "FunctionalImpairment": [functional_impairment],
+    "CognitiveImpairment": [cognitive_impairment],
 })
 
 st.subheader("📝 Input Preview")
 st.dataframe(input_df, use_container_width=True)
 
-# --- Train pipeline on some dummy data (so encoder knows categories) ---
-# 👇 You must replace with the categories/data you trained on!
-dummy_data = pd.DataFrame({
-    "Age": [30, 45, 60],
-    "BMI": [22.5, 28.0, 35.0],
-    "NumberOfPreviousAdmissions": [1, 2, 3],
-    "LengthOfStay": [7, 14, 21],
-    "MedicationAdherence": ["Low", "Medium", "High"],
-    "Diagnosis": ["Schizophrenia", "Bipolar Disorder", "Depression"],
-    "SocialSupport": ["Low", "Moderate", "High"],
-})
-
-pipeline.fit(dummy_data)   # fit only once
-
-# --- Preprocess input ---
+# ------------------ Preprocessing ------------------
 try:
-    input_processed = pipeline.transform(input_df)
+    input_processed = pipeline.transform(input_df)   # expands → 28 features
 except Exception as e:
     st.error(f"Preprocessing failed: {e}")
     st.stop()
 
-# --- Make prediction ---
+# ------------------ Prediction ------------------
 if st.button("🔮 Predict Readmission Risk"):
     try:
         prob = float(model.predict(input_processed)[0][0])
